@@ -4,13 +4,16 @@ import os
 from pathlib import Path
 
 import requests
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.error import Forbidden
 from telegram.ext import Application, ApplicationBuilder, CommandHandler, ContextTypes
 
+load_dotenv()
+
 TOKEN = os.environ.get("TOKEN")
 API_URL = "https://open.er-api.com/v6/latest/USD"
-YUBORISH_ORALIGI = 3600
+YUBORISH_ORALIGI = int(os.environ.get("YUBORISH_ORALIGI", 3600))
 OBUNACHILAR_FAYLI = Path(os.environ.get("OBUNACHILAR_FAYLI", "obunachilar.json"))
 
 logging.basicConfig(

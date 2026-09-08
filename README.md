@@ -1,7 +1,7 @@
 # Valyuta kursi Telegram boti
 
 USD/UZS, USD/RUB va RUB/UZS kurslarini yuboradigan Telegram bot.
-Kurslar [open.er-api.com](https://open.er-api.com) dan olinadi.
+Kurslar [open.er-api.com](https://open.er-api.com) dan olinadi (API kaliti kerak emas).
 
 ## Buyruqlar
 
@@ -12,23 +12,129 @@ Kurslar [open.er-api.com](https://open.er-api.com) dan olinadi.
 | `/stop` | Obunani bekor qilish |
 | `/help` | Buyruqlar ro'yxati |
 
-## Ishga tushirish
+Namuna javob:
+
+```
+💵 1 USD = 12,150.00 UZS
+💵 1 USD = 78.50 RUB
+💶 1 RUB = 154.78 UZS
+```
+
+## 1-qadam: token olish
+
+1. Telegramda [@BotFather](https://t.me/BotFather) ni oching
+2. `/newbot` yuboring
+3. Bot nomini kiriting (masalan `Kurs Bot`)
+4. Username kiriting — `bot` bilan tugashi shart (masalan `mening_kurs_botim`)
+5. BotFather `123456789:AAE...` ko'rinishidagi tokenni beradi — uni saqlab qo'ying
+
+Ixtiyoriy, BotFather ichida buyruqlar ro'yxatini ham qo'shish mumkin —
+`/setcommands` yuboring va quyidagini joylashtiring:
+
+```
+start - Har soatlik kursga obuna bo'lish
+kurs - Hozirgi kursni ko'rish
+stop - Obunani bekor qilish
+help - Buyruqlar ro'yxati
+```
+
+## 2-qadam: sozlash va ishga tushirish
 
 ```bash
+git clone https://github.com/nodirbetg/Telegram-bot
+cd Telegram-bot
+
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-export TOKEN="@BotFather dan olingan token"
+cp .env.example .env               # .env ichiga o'z tokeningizni yozing
 python bot.py
 ```
 
+Ishga tushganda quyidagi log chiqadi:
+
+```
+INFO - 0 ta obunachi yuklandi.
+INFO - Bot ishga tushdi.
+```
+
+Endi Telegramda botingizga `/start` yuboring.
+
 ## Muhit o'zgaruvchilari
+
+Tokenni `.env` fayl orqali ham, oddiy muhit o'zgaruvchisi orqali ham berish mumkin.
+Muhit o'zgaruvchisi `.env` dan ustun turadi.
 
 | O'zgaruvchi | Majburiy | Standart | Izoh |
 |-------------|----------|----------|------|
 | `TOKEN` | ha | — | @BotFather dan olingan bot tokeni |
-| `OBUNACHILAR_FAYLI` | yo'q | `obunachilar.json` | Obunachilar ro'yxati saqlanadigan fayl |
+| `YUBORISH_ORALIGI` | yo'q | `3600` | Kurs yuborish oralig'i, soniyada |
+| `OBUNACHILAR_FAYLI` | yo'q | `obunachilar.json` | Obunachilar saqlanadigan fayl |
 
 Obunachilar ro'yxati diskka yoziladi, shuning uchun bot qayta ishga tushganda
 obunalar saqlanib qoladi.
+
+## 24/7 ishlatish
+
+Kompyuterda `python bot.py` qilib qoldirsangiz, kompyuter o'chganda bot ham
+to'xtaydi. Doimiy ishlashi uchun quyidagilardan birini tanlang.
+
+### Docker
+
+```bash
+docker build -t kurs-bot .
+docker run -d --restart unless-stopped \
+  -e TOKEN="sizning_tokeningiz" \
+  -v "$PWD/data:/app/data" \
+  -e OBUNACHILAR_FAYLI=/app/data/obunachilar.json \
+  --name kurs-bot kurs-bot
+```
+
+`-v` va `OBUNACHILAR_FAYLI` obunachilar ro'yxati konteyner o'chganda
+yo'qolmasligi uchun kerak.
+
+### Railway / Render / Fly.io
+
+Repoda `Dockerfile` va `Procfile` bor, shuning uchun repoyni ulash kifoya:
+
+1. Xizmatga GitHub repoyni ulang
+2. `TOKEN` ni muhit o'zgaruvchisi sifatida qo'shing
+3. Deploy qiling — jarayon turi **worker** (web emas, port ochilmaydi)
+
+Diskka yozish imkoni bo'lmagan platformalarda obunachilar ro'yxati qayta
+deploy qilinganda yo'qoladi.
+
+### Linux serverda systemd
+
+`/etc/systemd/system/kurs-bot.service`:
+
+```ini
+[Unit]
+Description=Kurs Telegram bot
+After=network-online.target
+
+[Service]
+WorkingDirectory=/opt/kurs-bot
+EnvironmentFile=/opt/kurs-bot/.env
+ExecStart=/opt/kurs-bot/.venv/bin/python bot.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now kurs-bot
+sudo journalctl -u kurs-bot -f
+```
+
+## Xatoliklar
+
+| Xabar | Sabab |
+|-------|-------|
+| `TOKEN muhit o'zgaruvchisi topilmadi` | `.env` yo'q yoki ichida `TOKEN` yozilmagan |
+| `telegram.error.InvalidToken` | Token noto'g'ri ko'chirilgan |
+| `telegram.error.NetworkError` | Internet yo'q yoki Telegram bloklangan — VPN/proxy kerak |
+| `Kurslarni olishda xato yuz berdi` | open.er-api.com javob bermayapti, keyinroq o'zi tiklanadi |
