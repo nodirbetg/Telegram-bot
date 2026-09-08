@@ -1,0 +1,20 @@
+app = "kurs-bot"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  YUBORISH_ORALIGI = "3600"
+  OBUNACHILAR_FAYLI = "/data/obunachilar.json"
+
+[processes]
+  app = "python bot.py"
+
+[mounts]
+  source = "kurs_bot_data"
+  destination = "/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

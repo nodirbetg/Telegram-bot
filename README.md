@@ -79,31 +79,48 @@ obunalar saqlanib qoladi.
 
 Kompyuterda `python bot.py` qilib qoldirsangiz, kompyuter o'chganda bot ham
 to'xtaydi. Doimiy ishlashi uchun quyidagilardan birini tanlang.
+Repoda har uchala platforma uchun tayyor config bor — faqat GitHub bilan
+kirib, `TOKEN` ni qo'shsangiz kifoya.
 
-### Docker
+### Render (`render.yaml`)
+
+1. [dashboard.render.com/select-repo?type=blueprint](https://dashboard.render.com/select-repo?type=blueprint)
+2. Bu repoyni tanlang — Render `render.yaml` ni o'zi o'qiydi
+3. `TOKEN` so'ralganda tokenni kiriting → **Apply**
+
+Background worker Render'da pullik (starter ~$7/oy). Bepul reja faqat web
+service uchun va u 15 daqiqadan keyin uxlab qoladi — polling bot uchun yaramaydi.
+
+### Railway (`railway.json`)
+
+1. [railway.com/new](https://railway.com/new) → **Deploy from GitHub repo**
+2. Bu repoyni tanlang — Railway `Dockerfile` orqali quradi
+3. **Variables** bo'limida `TOKEN` ni qo'shing → deploy
+
+Trial kredit tugagach hobby reja ~$5/oy.
+
+### Fly.io (`fly.toml`)
+
+```bash
+fly launch --no-deploy          # mavjud fly.toml ni ishlatadi
+fly secrets set TOKEN="sizning_tokeningiz"
+fly volumes create kurs_bot_data --size 1
+fly deploy
+```
+
+`fly.toml` da volume sozlangan — obunachilar ro'yxati qayta deploy qilinganda
+yo'qolmaydi. Karta biriktirish talab qilinadi, kichik bepul limit bor.
+
+### Docker (o'z serveringizda)
 
 ```bash
 docker build -t kurs-bot .
 docker run -d --restart unless-stopped \
   -e TOKEN="sizning_tokeningiz" \
-  -v "$PWD/data:/app/data" \
   -e OBUNACHILAR_FAYLI=/app/data/obunachilar.json \
+  -v "$PWD/data:/app/data" \
   --name kurs-bot kurs-bot
 ```
-
-`-v` va `OBUNACHILAR_FAYLI` obunachilar ro'yxati konteyner o'chganda
-yo'qolmasligi uchun kerak.
-
-### Railway / Render / Fly.io
-
-Repoda `Dockerfile` va `Procfile` bor, shuning uchun repoyni ulash kifoya:
-
-1. Xizmatga GitHub repoyni ulang
-2. `TOKEN` ni muhit o'zgaruvchisi sifatida qo'shing
-3. Deploy qiling — jarayon turi **worker** (web emas, port ochilmaydi)
-
-Diskka yozish imkoni bo'lmagan platformalarda obunachilar ro'yxati qayta
-deploy qilinganda yo'qoladi.
 
 ### Linux serverda systemd
 
@@ -129,6 +146,10 @@ WantedBy=multi-user.target
 sudo systemctl enable --now kurs-bot
 sudo journalctl -u kurs-bot -f
 ```
+
+Butunlay bepul variant izlasangiz: **Oracle Cloud Free Tier** doimiy bepul VM
+beradi (karta tekshiruvi bor, lekin pul yechilmaydi) — unda yuqoridagi systemd
+usuli ishlaydi. Uydagi eski kompyuter yoki Raspberry Pi ham yetarli.
 
 ## Xatoliklar
 
